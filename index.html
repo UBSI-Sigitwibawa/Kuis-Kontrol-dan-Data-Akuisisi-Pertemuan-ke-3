@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kuis Pertemuan 3 – Sistem Interfacing</title>
+<style>
+:root{--navy:#1a237e;--navy2:#283593;--bg:#eef1f8;--ok:#1b8a3a;--no:#c62828;--ink:#1f2433}
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:22px 16px;text-align:center}
+header h1{margin:0;font-size:1.4rem}header p{margin:4px 0 0;opacity:.85;font-size:.95rem}
+main{max-width:820px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:18px;margin-bottom:16px}
+label{display:block;font-weight:600;margin:10px 0 4px}
+input,select{width:100%;padding:10px;border:1px solid #b8c0d8;border-radius:8px;font-size:1rem}
+button{background:var(--navy);color:#fff;border:0;border-radius:8px;padding:12px 22px;font-size:1rem;cursor:pointer;margin-top:14px}
+button:hover{background:var(--navy2)}button.sec{background:#5c6bc0}
+.q h3{margin:0 0 10px;font-size:1.02rem}
+.opt{display:block;border:1px solid #c5cbe3;border-radius:8px;padding:9px 12px;margin:6px 0;cursor:pointer}
+.opt:hover{background:#f1f3fb}.opt input{width:auto;margin-right:8px}
+.opt.sel{border-color:var(--navy);background:#e8eaf6}
+.bar{position:sticky;top:0;background:#fff;border-bottom:3px solid var(--navy);padding:8px 16px;z-index:5;display:flex;justify-content:space-between;font-weight:600}
+.score{text-align:center}.score .n{font-size:3rem;font-weight:700;color:var(--navy)}
+.rv{border-left:5px solid var(--no)}.rv.ok{border-left-color:var(--ok)}
+.rv .exp{background:#f3f5fb;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:.95rem}
+.tag{font-weight:700}.ok .tag{color:var(--ok)}.rv:not(.ok) .tag{color:var(--no)}
+.id td{padding:2px 12px 2px 0}
+.hide{display:none}
+@media print{header,.bar,#login,#quiz,.noprint{display:none!important}body{background:#fff}.card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><h1>Kuis Pertemuan 3: Kontrol Dan Data Akuisisi – Sistem Interfacing</h1><p>Prodi Teknik Elektro • Universitas Bina Sarana Informatika</p></header>
+<main>
+<section id="login" class="card">
+<h2>Identitas Mahasiswa</h2>
+<label for="nama">Nama Lengkap</label><input id="nama" placeholder="Nama sesuai KRS">
+<label for="nim">NIM</label><input id="nim" inputmode="numeric" placeholder="Contoh: 19240001">
+<label for="prodi">Program Studi</label>
+<select id="prodi"><option value="">-- Pilih Prodi --</option><option>Teknik Elektro </option><option>Teknik Informatika</option><option>Sistem Informasi</option><option>Teknik Industri</option><option>Ilmu Komputer</option><option>Lainnya</option></select>
+<p style="font-size:.9rem;color:#555">30 soal pilihan ganda. Kuis hanya dapat dikerjakan satu kali per NIM.</p>
+<button onclick="start()">Mulai Kuis</button>
+<p id="err" style="color:var(--no)"></p>
+</section>
+
+<section id="quiz" class="hide">
+<div class="bar"><span id="who"></span><span id="prog">0/30 terjawab</span></div>
+<div id="qs" style="margin-top:14px"></div>
+<button onclick="submitQuiz()">Kumpulkan Jawaban</button>
+</section>
+
+<section id="result" class="hide">
+<div class="card score">
+<h2>Hasil Kuis</h2>
+<table class="id" style="margin:0 auto;text-align:left"><tr><td>Nama</td><td>: <b id="rn"></b></td></tr><tr><td>NIM</td><td>: <b id="rm"></b></td></tr><tr><td>Prodi</td><td>: <b id="rp"></b></td></tr><tr><td>Tanggal</td><td>: <b id="rd"></b></td></tr></table>
+<div class="n" id="rs"></div><div id="rd2"></div>
+<button class="noprint" onclick="window.print()">💾 Simpan ke PDF</button>
+<p class="noprint" style="font-size:.85rem;color:#555">Pada jendela cetak, pilih "Save as PDF" / "Simpan sebagai PDF".</p>
+</div>
+<h2>Pembahasan</h2><div id="rev"></div>
+</section>
+</main>
+<script>
+const Q=[
+["Apa pengertian interfacing?",["Proses menyimpan data ke memori permanen","Mekanisme yang memungkinkan dua sistem berkarakteristik berbeda saling berkomunikasi secara kompatibel","Proses memperbesar daya prosesor","Teknik menulis program di mikrokontroler"],1,"Interfacing adalah mekanisme yang menjembatani dua sistem dengan karakteristik berbeda (misalnya sensor dan mikrokontroler) agar dapat bertukar informasi secara kompatibel."],
+["Manakah sifat dunia fisik (analog)?",["Diskrit dan absolut","Kontinu, dinamis, dan tak terbatas","Hanya bernilai 0 dan 1","Terstruktur dalam bit dan byte"],1,"Dunia fisik bersifat kontinu, dinamis, dan tak terbatas, dengan variabel seperti suhu, kelembapan, kecepatan, dan tekanan."],
+["Manakah variabel yang termasuk dunia digital (komputasi)?",["Suhu dan tekanan","Kelembapan dan kecepatan","Bit, byte, register, dan logic High/Low","Cahaya dan gerak"],2,"Dunia digital bersifat diskrit dan terstruktur dengan variabel bit, byte, register, dan logic High/Low."],
+["Dalam analogi anatomi sistem komputasi, CPU berperan sebagai ...",["Buku catatan","Pintu gerbang","Jalan raya","Otak yang membuat keputusan dan menjalankan algoritma kontrol"],3,"CPU adalah pusat pemrosesan (otak) yang membuat keputusan dan menjalankan algoritma kontrol."],
+["Memori sementara dan permanen berturut-turut dikenal sebagai ...",["ROM dan RAM","RAM dan ROM","Bus dan Port","Cache dan Register"],1,"RAM adalah penyimpanan sementara, sedangkan ROM adalah penyimpanan permanen untuk instruksi dan data."],
+["Apa fungsi I/O Port?",["Menjadi batas antara dunia internal (mikroprosesor) dan dunia eksternal (sensor/aktuator)","Menyimpan program secara permanen","Menghitung algoritma kontrol","Mendinginkan prosesor"],0,"I/O Port adalah pintu gerbang antara dunia internal mikroprosesor dan dunia eksternal berupa sensor/aktuator."],
+["Tiga jenis bus pada sistem bus adalah ...",["Power, Ground, Clock","Address Bus, Data Bus, Control Bus","Input Bus, Output Bus, Memory Bus","Serial, Parallel, Hybrid"],1,"Sistem bus terdiri dari Address Bus, Data Bus, dan Control Bus."],
+["Address Bus menjawab pertanyaan ...",["Apa isinya?","Kapan dan bagaimana?","Ke mana? (menentukan lokasi spesifik data)","Siapa pengirimnya?"],2,"Address Bus menentukan lokasi data dengan arah satu arah dari CPU ke Memori/IO."],
+["Data Bus memiliki arah transfer ...",["Satu arah dari CPU ke memori","Satu arah dari memori ke CPU","Dua arah","Tidak berarah"],2,"Data Bus membawa nilai aktual data dan bersifat dua arah."],
+["Control Bus bertugas ...",["Menentukan alamat memori","Membawa nilai data","Mengubah sinyal analog ke digital","Mengatur waktu operasi dan sinkronisasi proses"],3,"Control Bus menjawab 'Kapan & Bagaimana?', yaitu mengatur waktu dan sinkronisasi operasi."],
+["Alur sinyal pada jalur INPUT (membaca dunia) adalah ...",["Processor → Interface → Actuator","Sensor → Interface → Processor","Actuator → Processor → Sensor","Interface → Sensor → Processor"],1,"Pada input, sensor membaca dunia, interface menyesuaikan sinyal, lalu processor mengolahnya."],
+["Pada studi kasus ESP32, relay berfungsi sebagai ...",["Sensor suhu","Pengubah analog ke digital","Saklar aman pemisah logika 3.3V dan daya pemanas 220V","Penyimpan data suhu"],2,"Relay bertindak sebagai saklar aman yang memisahkan sisi logika 3.3V dari beban heater 220V."],
+["Sensor 5V langsung dihubungkan ke ESP32 3.3V merupakan contoh rintangan ...",["Kesenjangan kecepatan","Level tegangan","Ground","Noise listrik"],1,"Perbedaan kompatibilitas daya (5V vs 3.3V) adalah masalah level tegangan."],
+["Kesenjangan kecepatan dalam interfacing berarti ...",["Sensor lebih cepat daripada CPU","CPU memproses data jutaan kali lebih cepat daripada respons fisik sensor","Kabel terlalu panjang","Baterai cepat habis"],1,"CPU jauh lebih cepat daripada respons fisik sensor sehingga perlu penyesuaian waktu pembacaan."],
+["Sinyal dunia nyata jarang bersih. Solusi untuk masalah noise listrik adalah ...",["Menaikkan tegangan","Menambah panjang kabel","Menggunakan filter agar data akurat","Mengganti CPU"],2,"Noise listrik diatasi dengan filter (signal conditioning) agar data yang dibaca akurat."],
+["Perbedaan titik nol antar alat yang merusak hasil pembacaan termasuk masalah ...",["Ground / Referensi","Level tegangan","Jenis sinyal","Kecepatan"],0,"Perbedaan titik nol (ground/referensi) antar perangkat membuat hasil pembacaan salah."],
+["Pada studi kasus, sinyal tegangan LM35 diubah menjadi data digital oleh ...",["Pin GPIO ESP32","Relay","Pin ADC pada ESP32","Heater"],2,"Pin ADC ESP32 mengubah tegangan analog LM35 menjadi data digital; GPIO dipakai untuk mengirim sinyal ke relay."],
+["Ciri komunikasi paralel adalah ...",["Data dikirim bit demi bit dalam satu jalur","Banyak jalur data digunakan serentak, cepat namun rentan crosstalk pada jarak jauh","Hanya digunakan untuk jarak sangat jauh","Selalu menggunakan satu kabel"],1,"Paralel memakai banyak jalur sekaligus; cepat tetapi rentan crosstalk di jarak jauh, contohnya Data Bus internal CPU."],
+["Komunikasi serial paling cocok untuk ...",["Jalur internal CPU","Jarak jauh dengan pengkabelan ringkas, misalnya sensor ke mikrokontroler","Menambah lebar bus data","Menghilangkan kebutuhan ground"],1,"Serial mengirim bit demi bit lewat satu jalur sehingga efisien untuk jarak jauh dan kabel ringkas."],
+["Protokol serial untuk jarak sangat dekat (dalam PCB) dan multi-sensor adalah ...",["RS-485","I²C","Ethernet","USB"],1,"I²C cocok untuk jarak sangat dekat di dalam PCB dan dapat menghubungkan banyak sensor."],
+["Protokol yang dicirikan jarak dekat dan kecepatan sangat tinggi adalah ...",["SPI","I²C","RS-485","UART"],0,"SPI dipakai pada jarak dekat dengan kecepatan sangat tinggi."],
+["Protokol yang tahan noise industri dan mencapai jarak hingga 1,2 km adalah ...",["SPI","UART","RS-485","I²C"],2,"RS-485 digunakan untuk jarak sangat jauh (hingga 1,2 km) dan tahan noise industri."],
+["Solusi aman untuk sensor industri 0–5V ke pin ADC ESP32 (maks 3.3V) adalah ...",["Hubungkan langsung","Naikkan tegangan ESP32 ke 5V","Gunakan voltage divider atau logic level converter","Lepas ground sensor"],2,"Hubungan langsung tidak aman. Gunakan pembagi tegangan atau logic level converter untuk menurunkan rentang sinyal secara proporsional."],
+["Application Layer pada arsitektur interfacing berisi ...",["Sensor dan kabel","Chip CH340 dan Max232","Software di PC (Python, LabVIEW) yang mengubah angka menjadi grafik","Kode C/C++ pada register hardware"],2,"Application Layer adalah perangkat lunak di PC seperti Python atau LabVIEW untuk menyajikan data kepada pengguna."],
+["Firmware Layer berisi ...",["Kode mikrokontroler (C/C++) yang membaca bit dari register hardware","Konektor fisik","Grafik di PC","Rangkaian pengondisi sinyal"],0,"Firmware adalah kode mikrokontroler yang berinteraksi langsung dengan register hardware."],
+["CH340 dan Max232 termasuk lapisan ...",["Application Layer","Firmware Layer","Interface/Driver Layer","Hardware Layer"],2,"Chip controller seperti CH340 dan Max232 berada pada Interface/Driver Layer bersama rangkaian pengkondisi sinyal."],
+["Urutan yang benar pada sistem akuisisi data (DAQ) adalah ...",["Sensor → ADC → Signal Conditioning → Variabel Fisik → Logging","Variabel Fisik → Sensor → Signal Conditioning → ADC → Pemrosesan/Logging","Variabel Fisik → ADC → Sensor → Logging","Sensor → Logging → ADC → Variabel Fisik"],1,"Variabel fisik dibaca sensor, dikondisikan, didigitalkan oleh ADC, lalu diproses dan disimpan CPU."],
+["Dua proses utama pada ADC adalah ...",["Amplifying dan filtering","Sampling dan quantization","Encoding dan decoding","Switching dan latching"],1,"ADC melakukan sampling (mengambil cuplikan waktu) dan quantization (membulatkan ke nilai diskrit)."],
+["Fungsi Interface/Driver pada sistem kontrol adalah ...",["Menaikkan daya sinyal logika menjadi daya fisik (misalnya relay)","Membaca suhu ruangan","Mengubah analog ke digital","Menyimpan data historis"],0,"Driver menaikkan daya sinyal logika dari mikrokontroler agar mampu menggerakkan aktuator."],
+["Pernyataan yang benar tentang siklus closed loop adalah ...",["Hanya satu arah dari sensor ke aktuator","Siklus tak berujung: sensor membaca, CPU memutuskan, aktuator mengubah dunia, lalu dibaca lagi","Tidak memerlukan sensor","Hanya terjadi di dunia digital"],1,"Interfacing bukan jalan satu arah, melainkan siklus yang terus-menerus membaca dan mengoreksi realitas."]
+];
+const L="ABCD";let user=null;
+const $=id=>document.getElementById(id);
+const key=n=>"kuis_p3_interfacing_"+n;
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function load(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+function start(){
+ const nama=$("nama").value.trim(),nim=$("nim").value.trim(),prodi=$("prodi").value;
+ if(!nama||!nim||!prodi){$("err").textContent="Nama, NIM, dan Prodi wajib diisi.";return}
+ if(!/^\d{5,}$/.test(nim)){$("err").textContent="NIM harus berupa angka.";return}
+ user={nama,nim,prodi};
+ const prev=load(key(nim));
+ if(prev){showResult(prev,true);return}
+ $("login").classList.add("hide");$("quiz").classList.remove("hide");
+ $("who").textContent=nama+" • "+nim;
+ $("qs").innerHTML=Q.map((q,i)=>`<div class="card q"><h3>${i+1}. ${q[0]}</h3>`+q[1].map((o,j)=>`<label class="opt" id="o${i}_${j}"><input type="radio" name="q${i}" value="${j}" onchange="pick(${i},${j})">${L[j]}. ${o}</label>`).join("")+`</div>`).join("");
+}
+function pick(i,j){
+ for(let k=0;k<4;k++)$("o"+i+"_"+k).classList.toggle("sel",k===j);
+ $("prog").textContent=document.querySelectorAll("#qs input:checked").length+"/30 terjawab";
+}
+function submitQuiz(){
+ const ans=Q.map((_,i)=>{const c=document.querySelector(`input[name=q${i}]:checked`);return c?+c.value:-1});
+ const blank=ans.filter(a=>a<0).length;
+ if(blank&&!confirm(blank+" soal belum dijawab. Tetap kumpulkan? Kuis tidak dapat diulang."))return;
+ const r={...user,ans,tgl:new Date().toLocaleString("id-ID")};
+ save(key(user.nim),r);showResult(r,false);
+}
+function showResult(r,again){
+ let ok=0;r.ans.forEach((a,i)=>{if(a===Q[i][2])ok++});
+ const sc=(ok/30*100).toFixed(1).replace(/\.0$/,"");
+ ["login","quiz"].forEach(x=>$(x).classList.add("hide"));$("result").classList.remove("hide");
+ $("rn").textContent=r.nama;$("rm").textContent=r.nim;$("rp").textContent=r.prodi;$("rd").textContent=r.tgl;
+ $("rs").textContent=sc;
+ $("rd2").innerHTML=`Benar <b>${ok}</b> • Salah <b>${r.ans.filter((a,i)=>a>=0&&a!==Q[i][2]).length}</b> • Kosong <b>${r.ans.filter(a=>a<0).length}</b> dari 30 soal`+(again?`<br><i>NIM ini sudah pernah mengerjakan kuis; hasil sebelumnya ditampilkan.</i>`:"");
+ $("rev").innerHTML=Q.map((q,i)=>{const a=r.ans[i],g=a===q[2];
+  return `<div class="card rv ${g?"ok":""}"><b>${i+1}. ${q[0]}</b><br>Jawaban Anda: ${a<0?"<i>tidak dijawab</i>":L[a]+". "+q[1][a]} <span class="tag">${g?"✔ Benar":"✘ Salah"}</span><br>Kunci: <b>${L[q[2]]}. ${q[1][q[2]]}</b><div class="exp">💡 ${q[3]}</div></div>`}).join("");
+ window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
